@@ -1,4 +1,6 @@
-pub trait Entry {
+use erased_serde::Serialize;
+
+pub trait BaseEntry: Serialize {
     fn run(&self) -> bool;
     fn matches(&self, search: &str) -> bool;
     fn name(&self) -> &str;

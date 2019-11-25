@@ -1,6 +1,9 @@
-use crate::altab::entries::Entry;
+use crate::altab::entries::BaseEntry;
+use serde::{Serialize, Deserialize};
+
 use std::path::PathBuf;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ShortcutEntry {
     pub name: String,
     pub icon: i8,
@@ -19,7 +22,7 @@ impl ShortcutEntry {
     }
 }
 
-impl Entry for ShortcutEntry {
+impl BaseEntry for ShortcutEntry {
     fn run(&self) -> bool {
         return false;
     }

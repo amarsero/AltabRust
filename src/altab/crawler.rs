@@ -1,14 +1,14 @@
 use crate::altab::deposit::Deposit;
 use crate::altab::entries::shortcut_entry::ShortcutEntry;
-use crate::altab::entries::*;
 use std::fs;
 use std::path::Path;
 
-pub fn crawl_new_path(deposit: &mut Deposit, path: &str, size: i32) {
+pub fn crawl_new_path(deposit: &Deposit, path: &Path) {
     let paths = fs::read_dir(path);
     if paths.is_err() {
         return;
     }
+    let mut vec: Vec<Box<ShortcutEntry>> = Vec::new();
 
     for file_path in paths.unwrap() {
         let path = file_path.unwrap().path();
@@ -16,21 +16,26 @@ pub fn crawl_new_path(deposit: &mut Deposit, path: &str, size: i32) {
             match path.extension().map_or("", |v| v.to_str().unwrap()){
                 "lnk" | "exe" => {
                     let entry = new_shorctut_entry(&path);
-                    if deposit.entries.as_slice().iter().any(|x| entry.name == x.name())
+                    if deposit.entries.read().unwrap().as_slice().iter().any(|x| entry.name == (**x).name)
                     {
                         continue;
                     }
-                    deposit.entries.push(Box::new(entry));
+                    vec.push(Box::new(entry));
                 }
                 _ => continue
             }
         }
     }
+
+    if vec.len() > 0
+    {
+        deposit.entries.write().unwrap().append(&mut vec);
+    }
 }
 
-fn new_shorctut_entry(fullPath: &Path) -> ShortcutEntry {
+fn new_shorctut_entry(full_path: &Path) -> ShortcutEntry {
     let mut entry: ShortcutEntry = ShortcutEntry::new();
-    entry.full_path.push(fullPath);
+    entry.full_path.push(full_path);
     entry.name.push_str(entry.full_path.file_name().map_or("noname", |x| x.to_str().unwrap()));
     // if (info.Extension.ToLower() == ".lnk")
     // {
