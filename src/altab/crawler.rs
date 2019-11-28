@@ -2,13 +2,14 @@ use crate::altab::deposit::Deposit;
 use crate::altab::entries::shortcut_entry::ShortcutEntry;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 pub fn crawl_new_path(deposit: &Deposit, path: &Path) {
     let paths = fs::read_dir(path);
     if paths.is_err() {
         return;
     }
-    let mut vec: Vec<Box<ShortcutEntry>> = Vec::new();
+    let mut vec: Vec<Arc<ShortcutEntry>> = Vec::new();
 
     for file_path in paths.unwrap() {
         let path = file_path.unwrap().path();
@@ -20,7 +21,7 @@ pub fn crawl_new_path(deposit: &Deposit, path: &Path) {
                     {
                         continue;
                     }
-                    vec.push(Box::new(entry));
+                    vec.push(Arc::new(entry));
                 }
                 _ => continue
             }

@@ -12,6 +12,8 @@ fn main() {
 
     let altab = Altab::new();
 
+    altab.search_all(String::from("hi"));
+
     let glade_src = include_str!("GraphApp.glade");
     let builder = gtk::Builder::new_from_string(glade_src);
 
