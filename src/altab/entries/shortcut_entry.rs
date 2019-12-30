@@ -27,7 +27,8 @@ impl BaseEntry for ShortcutEntry {
         return false;
     }
     fn matches(&self, search: &str) -> bool {
-        return false;
+         return self.name.contains(search) 
+            || self.full_path.to_str().map(|x| x.contains(search)).unwrap_or(false);
     }
     fn name(&self) -> &str {
         return &self.name;
