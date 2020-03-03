@@ -1,4 +1,6 @@
 extern crate gtk;
+extern crate gio;
+extern crate gdk_pixbuf;
 
 use gtk::prelude::*;
 mod altab;
@@ -30,6 +32,11 @@ fn main() {
         return entry_recv_loop(rx.clone(), lsclone.clone());
     });
 
+    {
+        let mut altab = altab.write().unwrap();
+        altab.search_all(String::from(""));
+    }
+    
     let lsclone = list_store.clone();
     search_entry.connect_search_changed(move |search_entry| {
         search_changed(search_entry, altab.write().unwrap(), lsclone.clone());
@@ -53,6 +60,10 @@ fn search_changed(search_entry: &gtk::SearchEntry, mut altab: std::sync::RwLockW
 
 fn entry_recv_loop(rx: std::sync::Arc<mpsc::Receiver<crate::altab::entries::ResultEntry>>, list_store: gtk::ListStore) -> gtk::prelude::Continue {
     while let Ok(entry) = rx.try_recv() {
+        let iter = list_store.get_iter_first();
+        while iter.is_some() {
+            
+        }
         let tree_iter = list_store.append();
         let name = entry.1.name().to_value();
         list_store.set_value(&tree_iter, 1, &name);
@@ -60,3 +71,10 @@ fn entry_recv_loop(rx: std::sync::Arc<mpsc::Receiver<crate::altab::entries::Resu
     return gtk::prelude::Continue(true);
 }
 
+fn clean_list_store(list_store: &gtk::ListStore) {
+    list_store.foreach(|treemodel, treepath, treeiter| 
+    {
+        tree
+        return false;
+    });
+}

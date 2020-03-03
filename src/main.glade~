@@ -90,26 +90,4 @@
       </object>
     </child>
   </object>
-  <object class="GtkTreeStore" id="treestore1">
-    <columns>
-      <!-- column-name Icon -->
-      <column type="GdkPixbuf"/>
-      <!-- column-name Name -->
-      <column type="gchararray"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0"/>
-        <col id="1" translatable="yes">Enenenen 1</col>
-      </row>
-      <row>
-        <col id="0"/>
-        <col id="1" translatable="yes">owwowowowo 2</col>
-      </row>
-      <row>
-        <col id="0"/>
-        <col id="1" translatable="yes">33333</col>
-      </row>
-    </data>
-  </object>
 </interface>

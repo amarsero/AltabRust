@@ -95,7 +95,7 @@ impl Deposit {
             }
         }
 
-        if state.sent_count < 5 {
+        if state.sent_count < 5 && search.len() > 2 {
             let mut to_add = false;
             let mut list_of_edits: Vec<Vec<String>> = vec![Vec::new(); search_split.len()];
             for k in 0..search_split.len() {
@@ -115,6 +115,14 @@ impl Deposit {
                                 break;
                             }
                         }
+                        if !to_add {
+                            for edited_word in list_of_edits[k].iter() {
+                                if edited_word.contains(entry_word) {
+                                    to_add = true;
+                                    break;
+                                }
+                            }
+                        }
                         if to_add {
                             state
                                 .send_entry(ResultEntry(
@@ -129,7 +137,7 @@ impl Deposit {
                 }
             }
 
-            if state.sent_count < 3 && search.len() < 11 {
+            if state.sent_count < 3 && search.len() < 11 && search.len() > 2 {
                 to_add = false;
                 for k in list_of_edits.into_iter() {
                     let edited = spell_checker::add_new_edits(k);
@@ -142,6 +150,14 @@ impl Deposit {
                                 if entry_word == edited_word {
                                     to_add = true;
                                     break;
+                                }
+                            }
+                            if !to_add {
+                                for edited_word in edited.iter() {
+                                    if edited_word.contains(entry_word) {
+                                        to_add = true;
+                                        break;
+                                    }
                                 }
                             }
                             if to_add {
