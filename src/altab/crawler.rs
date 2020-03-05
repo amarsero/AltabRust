@@ -3,7 +3,7 @@ use crate::altab::entries::shortcut_entry::ShortcutEntry;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
-use gio::{FileExt, LoadableIconExt};
+use gio::{FileExt};
 
 #[derive(Debug, Clone)]
 struct CrawlError;
@@ -78,6 +78,7 @@ fn new_shorctut_entry(full_path: &Path) -> ShortcutEntry {
     return entry;
 }
 
+#[allow(dead_code, unused_variables, unreachable_code)]
 fn get_icon(path: &Path) -> Result<(), CrawlError> {
     return Err(CrawlError{});
     let file = gio::File::new_for_path(path);

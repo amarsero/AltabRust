@@ -60,21 +60,31 @@ fn search_changed(search_entry: &gtk::SearchEntry, mut altab: std::sync::RwLockW
 
 fn entry_recv_loop(rx: std::sync::Arc<mpsc::Receiver<crate::altab::entries::ResultEntry>>, list_store: gtk::ListStore) -> gtk::prelude::Continue {
     while let Ok(entry) = rx.try_recv() {
-        let iter = list_store.get_iter_first();
-        while iter.is_some() {
-            
+        let iter = &list_store.get_iter_first();
+        if iter.is_none() {
+            let tree_iter = list_store.append();
+            let name = entry.1.name().to_value();
+            list_store.set_value(&tree_iter, 1, &name);
+        } else {    
+            while iter.is_some() {
+                let name = list_store
+                                .get_value(iter.as_ref().unwrap(), 1)
+                                .get::<String>()
+                                .unwrap()
+                                .unwrap();
+                if name == entry.1.name() {
+                    break;
+                }
+
+                //  No next item
+                if !list_store.iter_next(iter.as_ref().unwrap()) {
+                    let tree_iter = list_store.append();
+                    let name = entry.1.name().to_value();
+                    list_store.set_value(&tree_iter, 1, &name);
+                    break;
+                }
+            }
         }
-        let tree_iter = list_store.append();
-        let name = entry.1.name().to_value();
-        list_store.set_value(&tree_iter, 1, &name);
     }
     return gtk::prelude::Continue(true);
-}
-
-fn clean_list_store(list_store: &gtk::ListStore) {
-    list_store.foreach(|treemodel, treepath, treeiter| 
-    {
-        tree
-        return false;
-    });
 }
