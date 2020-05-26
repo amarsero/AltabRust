@@ -5,12 +5,13 @@ use crate::altab::spell_checker;
 use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::sync::{mpsc, Arc, RwLock};
+use ngrammatic::Corpus;
 
 
 
 pub struct Deposit {
     pub entries: Arc<RwLock<Vec<Arc<ShortcutEntry>>>>,
-    pub total_run_count: i64,
+    pub total_run_count: i64
 }
 
 type SendResult = Result<(), mpsc::SendError<ResultEntry>>;
@@ -176,6 +177,14 @@ impl Deposit {
             }
         }
     }
+
+    pub fn populate_corpus(&self, corpus: &mut Corpus) {
+        let entries = self.entries.read().unwrap();
+        for entry in entries.iter()
+        {
+            corpus.add_text(entry.name())
+        }
+    } 
 }
 
 struct SearchState {
@@ -187,7 +196,7 @@ struct SearchState {
 
 impl SearchState {
     fn send_entry(&mut self, entry: ResultEntry) -> SendResult {
-        if !*self.running.read().unwrap() 
+        if !*self.running.read().unwrap()
         {
             panic!("Search thread's done running");
         }

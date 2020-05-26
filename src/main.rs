@@ -1,6 +1,7 @@
 extern crate gtk;
 extern crate gio;
 extern crate gdk_pixbuf;
+extern crate ngrammatic;    
 
 use gtk::prelude::*;
 mod altab;
