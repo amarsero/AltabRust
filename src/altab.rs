@@ -13,23 +13,20 @@ extern crate dirs;
 
 pub struct Altab {
     pub deposit: Arc<Deposit>,
-    sender: mpsc::Sender<ResultEntry>,
     current_search_running: Option<Arc<RwLock<bool>>>
 }
 
 impl Altab {
-    pub fn new() -> (Altab, mpsc::Receiver<ResultEntry>) {
-        let (tx, rx) = mpsc::channel::<ResultEntry>();
+    pub fn new() -> Altab {
         let altab = Altab {
             deposit: Arc::new(Deposit::new()),
-            sender: tx,
             current_search_running: None
         };
         let dp = altab.deposit.clone();
         thread::spawn(move || {
             Altab::init(&*dp);
         });
-        return (altab, rx);
+        return altab;
     }
     fn init(deposit: &Deposit) {
         crate::altab::persistence::load(deposit);
@@ -38,22 +35,19 @@ impl Altab {
         crate::altab::persistence::save(deposit);
     }
 
-    pub fn stop_search(&mut self) {
-        if let Some(search) = self.current_search_running.clone() {
-            let mut signal = search.write().unwrap();
-            *signal = false;
-        }
-        self.current_search_running = None;
-    }
-
-    pub fn search_all<'a>(&'a mut self, search: String) {        
+    pub fn search<'a>(&'a mut self, search: String) -> mpsc::Receiver<ResultEntry>{        
         let depo = self.deposit.clone();
-        let tx = self.sender.clone();
+        let (tx, rx) = mpsc::channel::<ResultEntry>();
         let signal = Arc::new(RwLock::new(true));
         let clone = signal.clone();
         thread::spawn(move || {
             depo.do_search(&search, tx, clone);
         });
+        if let Some(search) = self.current_search_running.clone() {
+            let mut signal = search.write().unwrap();
+            *signal = false;
+        }
         self.current_search_running = Some(signal);
+        return rx;
     }
 }

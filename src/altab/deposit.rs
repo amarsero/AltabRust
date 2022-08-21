@@ -62,9 +62,9 @@ impl Deposit {
         }
         let mut state = SearchState {
             sent_count: 0,
-            tx: tx,
+            tx,
             list: Box::new(Vec::new()),
-            running: running
+            running
         };
         let upper = search.to_uppercase();
         let search_split: Vec<&str> = upper.split_whitespace().collect();

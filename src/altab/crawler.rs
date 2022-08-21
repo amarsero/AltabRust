@@ -1,9 +1,13 @@
+use parselnk::Lnk;
+
 use crate::altab::deposit::Deposit;
 use crate::altab::entries::shortcut_entry::ShortcutEntry;
+use std::convert::TryFrom;
+use std::ffi::OsStr;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
-use gio::{FileExt};
 
 #[derive(Debug, Clone)]
 struct CrawlError;
@@ -32,107 +36,70 @@ pub fn crawl_new_path(deposit: &Deposit, path: &Path) {
     for file_path in paths.unwrap() {
         let path = file_path.unwrap().path();
         if path.is_file() {
-            match path.extension().map_or("", |v| v.to_str().unwrap()){
+            match path.extension().map_or("", |v| v.to_str().unwrap()) {
                 "lnk" | "exe" => {
                     let entry = new_shorctut_entry(&path);
-                    if deposit.entries.read().unwrap().as_slice().iter().any(|x| entry.name == (**x).name)
+                    if deposit
+                        .entries
+                        .read()
+                        .unwrap()
+                        .as_slice()
+                        .iter()
+                        .any(|x| entry.name == (**x).name)
                     {
                         continue;
                     }
                     vec.push(Arc::new(entry));
                 }
-                _ => continue
+                _ => continue,
             }
         }
     }
 
-    if vec.len() > 0
-    {
+    if vec.len() > 0 {
         deposit.entries.write().unwrap().append(&mut vec);
     }
 }
 
 fn new_shorctut_entry(full_path: &Path) -> ShortcutEntry {
+    let lnk_extension = OsStr::new("lnk");
     let mut entry: ShortcutEntry = ShortcutEntry::new();
-    entry.full_path.push(full_path);
-    entry.name.push_str(entry.full_path.file_name().map_or("noname", |x| x.to_str().unwrap()));
-    // if (info.Extension.ToLower() == ".lnk")
-    // {
-    //     IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell(); //Create a new WshShell Interface
-    //     IWshRuntimeLibrary.IWshShortcut link;
-    //     link = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(fullPath); //Link the interface to our shortcut
-    //     string targetPath = link.TargetPath;
-    //     targetPath = FindFile(targetPath);
-    //     if (targetPath != null)
-    //     {
-    //         entry.Icon = Icon.ExtractAssociatedIcon(targetPath);
-    //         entry.TargetPath = targetPath;
-    //     }
-    // }
-    // else
-    // {
-    //     entry.TargetPath = fullPath;
-    //     entry.Icon = Icon.ExtractAssociatedIcon(fullPath);
-    // //}
-    
+    if full_path.extension() == Some(lnk_extension) {
+        if let Ok(lnk) = Lnk::try_from(full_path) {
+            println!("{}", full_path.to_str().unwrap_or("pipi").to_string());
+            let relative = lnk.relative_path().unwrap_or(PathBuf::from_str("pipi").unwrap());
+            println!("{}", relative.to_str().unwrap_or("pipi").to_string());
+            let joined = full_path.parent().unwrap_or(Path::new("pipi")).join(relative).canonicalize().unwrap_or(PathBuf::from_str("pipi").unwrap());
+            println!("{}", joined.to_str().unwrap_or("pipi").to_string());
+            entry.full_path = PathBuf::from("\\\\?\\C:\\Users\\pWnd.-\\AppData\\Roaming\\Spotify\\Spotify.exe");
+            println!("{}", entry.full_path.to_str().unwrap_or("pipi").to_string());
+            // entry.full_path = lnk.relative_path()
+            // .and_then(|x|full_path.join(x).canonicalize().ok())
+            // .unwrap_or(full_path.to_path_buf());
+            entry.name = lnk.string_data.name_string.unwrap_or(
+                entry
+                    .full_path
+                    .file_stem()
+                    .and_then(|x| x.to_str())
+                    .map(|x| x.to_string())
+                    .unwrap_or("noname".to_string()),
+            );
+        }
+    } else {
+        entry.full_path.push(full_path);
+        entry.name.push_str(
+            entry
+                .full_path
+                .file_stem()
+                .map_or("noname", |x| x.to_str().unwrap()),
+        );
+    }
     return entry;
 }
 
 #[allow(dead_code, unused_variables, unreachable_code)]
 fn get_icon(path: &Path) -> Result<(), CrawlError> {
-    return Err(CrawlError{});
-    let file = gio::File::new_for_path(path);
-    let file_info: gio::FileInfo = file.query_info("standar::*", gio::FileQueryInfoFlags::NONE, gio::NONE_CANCELLABLE)
-                        .map_err(|_| CrawlError{})?;
-    
-    // let content_type = file_info.get_content_type()
-    //         .ok_or(CrawlError{})?;
-    
-    // let app_info = gio::AppInfo::get_default_for_type(&content_type, false)
-    //         .ok_or(CrawlError{})?;
-
-    // let icon = file_info.get_icon()
-    //         .ok_or(CrawlError{})?;
-
-    let file_icon = gio::FileIcon::new(&file);
-
-    // let (stream, _) = file_icon.load(20, gio::NONE_CANCELLABLE)
-    //         .map_err(|_| CrawlError{})?;
-
-    let pixbuf = gdk_pixbuf::Pixbuf::new_from_file(file_icon.to_string());
-    
-    if let Err(error) = pixbuf {
-        println!("{}", file_icon.to_string());
-        println!("{}", error);
-    }
-    
-
-    //gtk::gio::File
-    /*
-    GError *error;
-    GFile *file = g_file_new_for_path (argv[1]);
-    GFileInfo *file_info = g_file_query_info (file,
-                                              "standard::*",
-                                              0,
-                                              NULL,
-                                              &error);
-
-    const char *content_type = g_file_info_get_content_type (file_info);
-    char *desc = g_content_type_get_description (content_type);
-    GAppInfo *app_info = g_app_info_get_default_for_type (
-                                  content_type,
-                                  FALSE);
-
-    /* you'd have to use g_loadable_icon_load to get the actual icon */
-    GIcon *icon = g_file_info_get_icon (file_info);
-
-    printf ("File: %s\nDescription: %s\nDefault Application: %s\n",
-            argv[1],
-            desc,
-            g_app_info_get_executable (app_info));
-
-    return 0;
-    */
+    return Err(CrawlError {});
 
     return Ok(());
 }

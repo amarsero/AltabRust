@@ -6,4 +6,5 @@ use std::sync::Arc;
 
 pub use self::entry::*;
 
+#[derive(Clone)]
 pub struct ResultEntry(pub f32, pub Arc<ShortcutEntry>);

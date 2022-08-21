@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'rusto_trainuru'",
+            "name": "Debug executable 'altabrust'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=rusto_trainuru",
-                    "--package=rusto_trainuru"
+                    "--bin=altabrust",
+                    "--package=altabrust"
                 ],
                 "filter": {
-                    "name": "rusto_trainuru",
+                    "name": "altabrust",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rusto_trainuru'",
+            "name": "Debug unit tests in executable 'altabrust'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=rusto_trainuru",
-                    "--package=rusto_trainuru"
+                    "--bin=altabrust",
+                    "--package=altabrust"
                 ],
                 "filter": {
-                    "name": "rusto_trainuru",
+                    "name": "altabrust",
                     "kind": "bin"
                 }
             },

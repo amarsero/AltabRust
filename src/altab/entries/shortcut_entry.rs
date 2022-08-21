@@ -24,7 +24,11 @@ impl ShortcutEntry {
 
 impl BaseEntry for ShortcutEntry {
     fn run(&self) -> bool {
-        return false;
+        println!("{}", String::from( PathBuf::from("\\\\?\\C:\\Users\\pWnd.-\\AppData\\Roaming\\Spotify\\Spotify.exe").as_os_str().to_str().unwrap()));
+        return std::process::Command::new( PathBuf::from("\\\\?\\C:\\Users\\pWnd.-\\AppData\\Roaming\\Spotify\\Spotify.exe").as_os_str())
+            .spawn()
+            .map_err(|err| println!("{}", err))
+            .is_ok();
     }
     fn matches(&self, search: &str) -> bool {
          return self.name.contains(search) 
