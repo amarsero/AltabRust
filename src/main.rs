@@ -1,4 +1,5 @@
 use eframe::egui;
+mod altab;
 
 fn main() {
     let native_options = eframe::NativeOptions::default();

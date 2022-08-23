@@ -6,14 +6,13 @@ use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::sync::{mpsc, Arc, RwLock};
 
-
-
 pub struct Deposit {
     pub entries: Arc<RwLock<Vec<Arc<ShortcutEntry>>>>,
     pub total_run_count: i64,
 }
 
 type SendResult = Result<(), mpsc::SendError<ResultEntry>>;
+type QueryRequest = (String, mpsc::Sender<ResultEntry>);
 
 impl Deposit {
     pub fn new() -> Deposit {
@@ -45,12 +44,16 @@ impl Deposit {
         }
     }
 
-    pub fn do_search(&self, search: &str, tx: mpsc::Sender<ResultEntry>, running: Arc<RwLock<bool>>) {
+    pub fn do_search(
+        &self,
+        search: &str,
+        tx: mpsc::Sender<ResultEntry>,
+        running: Arc<RwLock<bool>>,
+    ) {
         if search == "" {
             let read = self.entries.read().unwrap();
             for i in 0..read.len() {
-                if !*running.read().unwrap() 
-                {
+                if !*running.read().unwrap() {
                     return;
                 }
                 let result = tx.send(ResultEntry(0.0, read[i].clone()));
@@ -64,7 +67,7 @@ impl Deposit {
             sent_count: 0,
             tx,
             list: Box::new(Vec::new()),
-            running
+            running,
         };
         let upper = search.to_uppercase();
         let search_split: Vec<&str> = upper.split_whitespace().collect();
@@ -182,17 +185,119 @@ struct SearchState {
     pub tx: mpsc::Sender<ResultEntry>,
     pub list: Box<Vec<ResultEntry>>,
     pub sent_count: u32,
-    pub running: Arc<RwLock<bool>>
+    pub running: Arc<RwLock<bool>>,
 }
 
 impl SearchState {
     fn send_entry(&mut self, entry: ResultEntry) -> SendResult {
-        if !*self.running.read().unwrap() 
-        {
+        if !*self.running.read().unwrap() {
             panic!("Search thread's done running");
         }
         self.tx.send(entry)?;
         self.sent_count += 1;
         return Ok(());
+    }
+}
+
+fn search(query: &str, name: &str) -> f32 {
+    if name.starts_with(query) {
+        return 1.0;
+    }
+    let mut max = 0.0;
+    for qword in query.split_whitespace() {
+        for nword in name.split_whitespace() {
+            let score = word_score(qword, nword);
+            if score > max {
+                max = score;
+            }
+        }
+    }
+    return max;
+}
+
+fn word_score(qword: &str, nword: &str) -> f32 {
+    debug_assert_eq!(qword, qword.to_lowercase(), "Input should be lowercase!");
+    debug_assert_eq!(nword, nword.to_lowercase(), "Input should be lowercase!");
+    if qword.is_empty() {
+        return 0.0;
+    }
+    let mut error = 0;
+    let mut qi = qword.chars().peekable();
+    let mut ni = nword.chars().peekable();
+    let mut q = qi.next();
+    let mut n = ni.next();
+    while q.is_some() && n.is_some() {
+        if q.unwrap() != n.unwrap() {
+            error += 1;
+            let qnext = qi.peek();
+            let nnext = ni.peek();
+            
+            if nnext.is_some()
+                && qnext.is_some()
+                && *nnext.unwrap() == q.unwrap()
+                && *qnext.unwrap() == n.unwrap()
+            {
+                //transposes
+                n = ni.next();
+                q = qi.next();
+            } else if qnext.is_some() && *qnext.unwrap() == n.unwrap() {
+                //inserts
+                q = qi.next();
+            } else if nnext.is_some() && *nnext.unwrap() == q.unwrap() {
+                //deletes
+                n = ni.next();
+            }
+            //replaces is default error
+        }
+        q = q.and_then(|_| qi.next());
+        n = n.and_then(|_| ni.next());
+    }
+    if qword.len() < 2 && error > 0 {
+        return 0.0;
+    }
+    match error {
+        0 => 0.9,
+        1 => 0.8,
+        2 => 0.7,
+        _ => {
+            let total = 1.0 - (error as f32 / qword.len() as f32);
+            if total > 0.7 {
+                0.69
+            } else {
+                total
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn search() {
+        assert_eq!(super::search("hola", "hola"), 1.0, "Exact match");
+        assert_eq!(super::search("hola", "carlos hola"), 0.9, "Match on not first word");
+        assert_eq!(super::search("hola", "perro"), 0.0, "No Match");
+        assert_eq!(super::search("HOla", "hoLa"), 1.0, "case insensitive");
+        assert_eq!(super::search("", "hola"), 0.0, "Empty string");
+
+        //deletes
+        assert_eq!(super::search("ola", "hola"), 0.8);
+        assert_eq!(super::search("la", "hola"), 0.7);
+        assert!(super::search("a", "hola") < 0.7);
+
+        //transposes
+        assert_eq!(super::search("ohla", "hola"), 0.8);
+        assert_eq!(super::search("ohal", "hola"), 0.7);
+        assert!(super::search("minuto", "imunot") < 0.7);
+
+        //replaces
+        assert_eq!(super::search("bola", "hola"), 0.8);
+        assert_eq!(super::search("bota", "hola"), 0.7);
+        assert!(super::search("bote", "hola") < 0.7);
+
+        //inserts
+        assert_eq!(super::search("hhola", "hola"), 0.8);
+        assert_eq!(super::search("hhoola", "hola"), 0.7);
+        assert!(super::search("hhoolla", "hola") < 0.7);
     }
 }
