@@ -2,52 +2,63 @@ mod crawler;
 mod deposit;
 pub mod entries;
 mod persistence;
-mod spell_checker;
+
+
+use bincode::de;
 
 use crate::altab::deposit::Deposit;
-use std::thread;
-use std::sync::{Arc, mpsc, RwLock};
 use crate::altab::entries::ResultEntry;
+use std::path::Path;
+use std::sync::{mpsc, Arc};
+use std::thread;
 extern crate dirs;
 //use crate::altab::crawler::Crawler;
 
 pub struct Altab {
     pub deposit: Arc<Deposit>,
-    current_search_running: Option<Arc<RwLock<bool>>>
+    tx_query: mpsc::Sender<String>,
+    rx_result: mpsc::Receiver<ResultEntry>,
 }
 
 impl Altab {
-    pub fn new() -> Altab {
+    pub fn new() -> Altab {        
+        let (tx_query, rx_query) = mpsc::channel::<String>();
+        let (tx_result, rx_result) = mpsc::channel::<ResultEntry>();
         let altab = Altab {
             deposit: Arc::new(Deposit::new()),
-            current_search_running: None
+            tx_query,
+            rx_result,
         };
         let dp = altab.deposit.clone();
         thread::spawn(move || {
             Altab::init(&*dp);
+        });        
+        let depo = altab.deposit.clone();
+        thread::spawn(move || {
+            depo.do_search(rx_query, tx_result);
         });
         return altab;
     }
+
     fn init(deposit: &Deposit) {
         crate::altab::persistence::load(deposit);
         crate::altab::crawler::crawl_new_path(deposit, &dirs::desktop_dir().unwrap());
+        crate::altab::crawler::crawl_new_path(deposit, &dirs::home_dir().map(|mut x| {x.push("Desktop");x}).unwrap());
+        crate::altab::crawler::crawl_new_path(deposit, &dirs::public_dir().map(|mut x| {x.push("Desktop");x}).unwrap());
         deposit.remove_duplicates();
+        for entry in deposit.entries.read().unwrap().iter() {
+            println!("{}", entry.name);
+        }
         crate::altab::persistence::save(deposit);
     }
 
-    pub fn search<'a>(&'a mut self, search: String) -> mpsc::Receiver<ResultEntry>{        
-        let depo = self.deposit.clone();
-        let (tx, rx) = mpsc::channel::<ResultEntry>();
-        let signal = Arc::new(RwLock::new(true));
-        let clone = signal.clone();
-        thread::spawn(move || {
-            depo.do_search(&search, tx, clone);
-        });
-        if let Some(search) = self.current_search_running.clone() {
-            let mut signal = search.write().unwrap();
-            *signal = false;
-        }
-        self.current_search_running = Some(signal);
-        return rx;
+    pub fn search(&self, search: String)  ->  &mpsc::Receiver<ResultEntry>{
+        self.tx_query.send(search).unwrap();
+        self.rx_result.try_iter().count(); //Clean the previous results;
+        &self.rx_result
+    }  
+
+    pub fn get_recv(&self)  ->  &mpsc::Receiver<ResultEntry>{
+        &self.rx_result
     }
 }
