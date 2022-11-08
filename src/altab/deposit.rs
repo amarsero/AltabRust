@@ -117,13 +117,23 @@ fn word_score(qword: &str, nword: &str) -> u32 {
         q = q.and_then(|_| qi.next());
         n = n.and_then(|_| ni.next());
     }
-    if qword.len() < 2 && error > 0 {
-        return 0;
-    }
     match error {
         0 => 90,
-        1 => 80,
-        2 => 70,
+        1 => {
+            if qword.len() < 2 {
+                0
+            } else {
+                80
+            }
+        }
+        2 => {
+            if qword.len() < 3 {
+                0
+            } else {
+                70
+            }
+        }
+
         _ => {
             let total = (100 - error / qword.len() * 100) as u32;
             if total > 70 {
@@ -139,7 +149,11 @@ fn word_score(qword: &str, nword: &str) -> u32 {
 mod tests {
     #[test]
     fn search() {
-        assert_eq!(super::search("hola", "hola".to_string()), 100, "Exact match");
+        assert_eq!(
+            super::search("hola", "hola".to_string()),
+            100,
+            "Exact match"
+        );
         assert_eq!(
             super::search("hola", "carlos hola".to_string()),
             90,
@@ -149,9 +163,9 @@ mod tests {
         assert_eq!(super::search("", "hola".to_string()), 0, "Empty string");
 
         //deletes
-        assert_eq!(super::search("ola", "hola".to_string()), 80);
-        assert_eq!(super::search("la", "hola".to_string()), 70);
-        assert!(super::search("a", "hola".to_string()) < 70);
+        assert_eq!(super::search("gminola", "gominola".to_string()), 80);
+        assert_eq!(super::search("gmnola", "gominola".to_string()), 70);
+        assert!(super::search("gmnla", "gominola".to_string()) < 70);
 
         //transposes
         assert_eq!(super::search("ohla", "hola".to_string()), 80);
@@ -167,5 +181,11 @@ mod tests {
         assert_eq!(super::search("hhola", "hola".to_string()), 80);
         assert_eq!(super::search("hhoola", "hola".to_string()), 70);
         assert!(super::search("hhoolla", "hola".to_string()) < 70);
+
+        //short strings
+        assert!(super::search("a", "oooooooo".to_string()) < 70);
+        assert!(super::search("aa", "ooooooooo".to_string()) < 70);
+        assert!(super::search("aaa", "ooooooooooo".to_string()) < 70);
+        assert!(super::search("aaaa", "ooooooooooo".to_string()) < 70);
     }
 }

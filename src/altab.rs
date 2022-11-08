@@ -2,13 +2,10 @@ mod crawler;
 mod deposit;
 pub mod entries;
 mod persistence;
-
-
-use bincode::de;
+mod result_list;
 
 use crate::altab::deposit::Deposit;
 use crate::altab::entries::ResultEntry;
-use std::path::Path;
 use std::sync::{mpsc, Arc};
 use std::thread;
 extern crate dirs;

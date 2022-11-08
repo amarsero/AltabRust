@@ -56,6 +56,7 @@ impl eframe::App for MyEguiApp {
                             ui.horizontal(|ui| {
                                 _ = ui.button("");
                                 let text = item.name.clone();
+                                ui.label(format!("{0:3}", item.score));
                                 if index == self.selected_index {
                                     let response = ui.horizontal(|ui| {
                                         ui.label(
@@ -87,7 +88,7 @@ impl eframe::App for MyEguiApp {
             if ctx.input().key_pressed(egui::Key::ArrowDown) {
                 self.selected_index = std::cmp::min(49, self.selected_index + 1);
             } else if ctx.input().key_pressed(egui::Key::ArrowUp) {
-                self.selected_index = std::cmp::max(0, self.selected_index - 1);
+                self.selected_index = self.selected_index.saturating_sub(1);
             }
             ui.label(format!(
                 "Scroll offset: {:.0}/{:.0} px",

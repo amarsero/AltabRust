@@ -55,7 +55,7 @@ pub fn crawl_new_path(deposit: &Deposit, path: &Path) {
         }
     }
 
-    if !vec.is_empty(){
+    if !vec.is_empty() {
         deposit.entries.write().unwrap().append(&mut vec);
     }
 }
@@ -66,23 +66,31 @@ fn new_shorctut_entry(full_path: &Path) -> ShortcutEntry {
     if full_path.extension() == Some(lnk_extension) {
         if let Ok(lnk) = Lnk::try_from(full_path) {
             println!("{}", full_path.to_str().unwrap_or("pipi"));
-            let relative = lnk.relative_path().unwrap_or_else(||PathBuf::from_str("pipi").unwrap());
+            let relative = lnk
+                .relative_path()
+                .unwrap_or_else(|| PathBuf::from_str("pipi").unwrap());
             println!("{}", relative.to_str().unwrap_or("pipi"));
-            let joined = full_path.parent().unwrap_or_else(||Path::new("pipi")).join(relative).canonicalize().unwrap_or_else(|_|PathBuf::from_str("pipi").unwrap());
+            let joined = full_path
+                .parent()
+                .unwrap_or_else(|| Path::new("pipi"))
+                .join(relative)
+                .canonicalize()
+                .unwrap_or_else(|_| PathBuf::from_str("pipi").unwrap());
             println!("{}", joined.to_str().unwrap_or("pipi"));
-            entry.full_path = PathBuf::from("\\\\?\\C:\\Users\\pWnd.-\\AppData\\Roaming\\Spotify\\Spotify.exe");
+            // entry.full_path = PathBuf::from("\\\\?\\C:\\Users\\pWnd.-\\AppData\\Roaming\\Spotify\\Spotify.exe");
             println!("{}", entry.full_path.to_str().unwrap_or("pipi"));
-            // entry.full_path = lnk.relative_path()
-            // .and_then(|x|full_path.join(x).canonicalize().ok())
-            // .unwrap_or(full_path.to_path_buf());
-            entry.name = lnk.string_data.name_string.unwrap_or_else(||
+            entry.full_path = lnk
+                .relative_path()
+                .and_then(|x| full_path.join(x).canonicalize().ok())
+                .unwrap_or_else(|| full_path.to_path_buf());
+            entry.name = lnk.string_data.name_string.unwrap_or_else(|| {
                 entry
                     .full_path
                     .file_stem()
                     .and_then(|x| x.to_str())
                     .map(|x| x.to_string())
-                    .unwrap_or_else(||"noname".to_string()),
-            );
+                    .unwrap_or_else(|| "noname".to_string())
+            });
         }
     } else {
         entry.full_path.push(full_path);
